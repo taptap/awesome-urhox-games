@@ -19,11 +19,16 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository (main branch for scripts)
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
+
+      - name: Checkout PR branch
+        run: |
+          gh pr checkout ${{ github.event.issue.number }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
