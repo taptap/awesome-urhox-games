@@ -1,0 +1,23 @@
+{
+	"name": "racing-game",
+	"name_zh": "赛车游戏",
+	"version": "1.0.0",
+	"author": {
+	  "name": "ffly2",
+	  "github": "ffly2",
+	  "email": "ffwzpcctv@gmail.com"
+	},
+	"description": "racing-game",
+	"description_zh": "赛车游戏",
+	"category": "racing",
+	"tags": ["3d", "car", "racing", "urhox"],
+	"engine": {
+	  "name": "UrhoX",
+	  "minVersion": "1.0.0"
+	},
+	"entry": "scripts/main.lua",
+	"orientation": "landscape",
+	"license": "MIT",
+	"created": "2025-12-01",
+	"updated": "2025-12-11"
+  }
