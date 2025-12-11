@@ -1,0 +1,59 @@
+# ===================
+# UrhoX / Lua 项目
+# ===================
+
+# 编译输出
+*.luac
+__pycache__/
+*.pyc
+
+# 编辑器备份
+*.bak
+*.swp
+*.swo
+*~
+
+# IDE 配置
+.vscode/
+.idea/
+*.sublime-*
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+temp/
+tmp/
+
+# 构建输出
+build/
+bin/
+obj/
+
+# 依赖缓存
+node_modules/
+
+# ===================
+# 项目特定
+# ===================
+
+# 本地测试配置
+*.local.json
+.env.local
+
+# 大型资源（应使用 Git LFS）
+# *.psd
+# *.blend
+# *.fbx
+
+# 生成的文档
+docs/_build/
+
