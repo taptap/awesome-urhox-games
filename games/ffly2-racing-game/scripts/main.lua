@@ -28,13 +28,14 @@ local CONFIG = {
     FrontEngineForce = 2000.0,  -- 前轮动力
     RearEngineForce = 2700.0,   -- 后轮动力
     BrakeForce = 1000.0,         -- 刹车力度
-    MaxSteeringAngle = 0.25,     -- 最大转向角度（弧度）
+    MaxSteeringAngle = 0.2,     -- 最大转向角度（弧度）
     SteeringSpeed = 2.0,        -- 转向速度q2w
     
     -- 悬挂参数
     SuspensionStiffness = 500.0,    -- 悬挂刚度
     SuspensionDamping = 25,       -- 悬挂阻尼
     SuspensionCompression = 25,   -- 压缩阻尼
+    SuspensionRestLength = 0.4,   -- 悬挂静止长度（米），控制最大压缩行程
     WheelFriction = 2.0,           -- 轮胎摩擦力
     RollInfluence = 0.01,           -- 侧倾影响（降低防止翻车）
     
@@ -79,23 +80,24 @@ local CarSetting = {
         BodyColor = Color(0.1, 0.2, 0.5, 1.0),   -- 车身颜色（深蓝色）
         WheelRadius = 0.35,                       -- 轮子半径
         WheelWidth = 0.3,                         -- 轮子宽度
-        WheelHeight = 0.2,                      -- 轮子高度（悬挂连接点Y位置）
+        WheelHeight = -0.05,                      -- 轮子高度（悬挂连接点Y位置）
         
         -- 车辆参数
-        VehicleMass = 300.0,        -- 车辆质量 (kg)
-        FrontEngineForce = 1200.0,  -- 前轮动力
-        RearEngineForce = 1500.0,   -- 后轮动力
-        BrakeForce = 1000.0,         -- 刹车力度
-        MaxSteeringAngle = 0.15,     -- 最大转向角度（弧度）
+        VehicleMass = 800.0,        -- 车辆质量 (kg)
+        FrontEngineForce = 2500.0,  -- 前轮动力
+        RearEngineForce = 5000.0,   -- 后轮动力
+        BrakeForce = 500.0,         -- 刹车力度
+        MaxSteeringAngle = 0.2,     -- 最大转向角度（弧度）
         SteeringSpeed = 2.0,        -- 转向速度
         
         -- 悬挂参数
-        SuspensionStiffness = 40.0,    -- 悬挂刚度
-        SuspensionDamping = 15,       -- 悬挂阻尼
-        SuspensionCompression = 15,   -- 压缩阻尼
+        SuspensionStiffness = 50.0,    -- 悬挂刚度
+        SuspensionDamping = 150,       -- 悬挂阻尼
+        SuspensionCompression = 100,   -- 压缩阻尼
+        SuspensionRestLength = 0.15,   -- 悬挂静止长度（米），控制最大压缩行程
         WheelFriction = 2.0,           -- 轮胎摩擦力
         RollInfluence = 0.01,           -- 侧倾影响（降低防止翻车）
-
+        
         -- 翻车保护参数
         MaxRollAngle = 20.0,           -- 最大侧翻角度（度）
         MaxPitchAngle = 20.0,          -- 最大俯仰角度（度）
@@ -118,12 +120,12 @@ local CarSetting = {
         CoastTurnSpeedRetain = 0.6,   -- 滑行转弯时的速度保持率 (0-1, 1=完全保持)
         
         -- 前轮摩擦力（基于速度）- 保持较高以确保转向
-        FrontBaseFriction = 2.5,      -- 前轮默认摩擦力（静止时）
-        FrontMinFriction = 2.5,       -- 前轮最低摩擦力（高速时）
+        FrontBaseFriction = 1.6,      -- 前轮默认摩擦力（静止时）
+        FrontMinFriction = 1.6,       -- 前轮最低摩擦力（高速时）
         
         -- 后轮摩擦力（基于速度）- 较低使后轮更容易打滑
-        RearBaseFriction = 2,       -- 后轮默认摩擦力（静止时）
-        RearMinFriction = 2,        -- 后轮最低摩擦力（高速时）
+        RearBaseFriction = 1.25,       -- 后轮默认摩擦力（静止时）
+        RearMinFriction = 1.25,        -- 后轮最低摩擦力（高速时）
         
         FrictionDropSpeed = 100.0,    -- 摩擦力降到最低时的速度 (km/h)
     },
@@ -133,7 +135,7 @@ local CarSetting = {
         BodyColor = Color(0.6, 0.1, 0.1, 1.0),   -- 车身颜色（红色）
         WheelRadius = 0.45,                       -- 轮子半径（更大）
         WheelWidth = 0.4,                        -- 轮子宽度
-        WheelHeight = 0.15,                        -- 轮子高度（越野车底盘更高）
+        WheelHeight = -0.1,                        -- 轮子高度（越野车底盘更高）
         
         -- 车辆参数
         VehicleMass = 800.0,        -- 车辆质量 (kg)
@@ -143,10 +145,11 @@ local CarSetting = {
         MaxSteeringAngle = 0.2,     -- 最大转向角度（弧度）
         SteeringSpeed = 2.0,        -- 转向速度
         
-        -- 悬挂参数wwwwwwwwwwww
+        -- 悬挂参数
         SuspensionStiffness = 50.0,    -- 悬挂刚度
         SuspensionDamping = 150,       -- 悬挂阻尼
         SuspensionCompression = 100,   -- 压缩阻尼
+        SuspensionRestLength = 0.15,   -- 悬挂静止长度（米），控制最大压缩行程
         WheelFriction = 2.0,           -- 轮胎摩擦力
         RollInfluence = 0.01,           -- 侧倾影响（降低防止翻车）
         
@@ -261,7 +264,7 @@ local TrackConfig = {
         InnerTreeCount = 0,
     },
     [3] = {
-        Name = "蛇形弯道",
+        Name = "高架路赛道",
         Description = "S形连续弯道，挑战极限操控",
         TrackType = "loop",
         Width = 12,
@@ -302,8 +305,8 @@ local TrackConfig = {
         InnerTreeCount = 15,
     },
     [4] = {
-        Name = "蛇形弯道",
-        Description = "S形连续弯道，挑战极限操控",
+        Name = "平地测试",
+        Description = "平地测试",
         TrackType = "loop",
         Width = 12,
         -- 起点在第一个控制点 (-80, 0, 0)
@@ -324,6 +327,35 @@ local TrackConfig = {
         SegmentsPerSpan = 10,
         TrackOptions = {
             barrierHeight = 0.1,
+            barrierWidth = 0.5,
+            barrierColor = Color(1.0, 0.8, 0.2),
+            trackColor = Color(0.2, 0.18, 0.15),
+            closedLoop = true,
+        },
+        TreeCount = 40,
+        InnerTreeCount = 15,
+    },
+    [5] = {
+        Name = "上下坡",
+        Description = "上下坡",
+        TrackType = "loop",
+        Width = 12,
+        -- 起点在第一个控制点 (-80, 0, 0)
+        StartPosition = Vector3(0, 0, 0),
+        -- 方向：从(-80,0)到(-60,30)，dirX=20, dirZ=30, atan2(20,30)≈34°
+        StartRotation = 90,
+        PointsType = "points",
+        ControlPoints = {
+            Vector3(0, 0, 0),
+            Vector3(50, 10, 0),
+            Vector3(100, 0, 0),
+            Vector3(100, 0, 20),
+            Vector3(0, 0, 20),
+            Vector3(0, 0, 0),
+        },
+        SegmentsPerSpan = 10,
+        TrackOptions = {
+            barrierHeight = 0.07,
             barrierWidth = 0.5,
             barrierColor = Color(1.0, 0.8, 0.2),
             trackColor = Color(0.2, 0.18, 0.15),
@@ -567,7 +599,7 @@ function CreateVehicle()
     -- ========================================
     local wheelRadius = CONFIG.WheelRadius or 0.35  -- 轮子半径（使用配置）
     local wheelWidth = CONFIG.WheelWidth or 0.3     -- 轮子宽度（使用配置）
-    local suspensionRestLength = 0.4   -- 悬挂静止长度 0.4m（悬挂行程）
+    local suspensionRestLength = CONFIG.SuspensionRestLength or 0.4   -- 悬挂静止长度（米），控制最大压缩行程
     
     -- 悬挂方向和轮轴方向（在默认朝向下设置，车辆旋转后会自动跟随）
     local wheelDirection = Vector3(0, -1, 0)  -- 悬挂方向：向下
@@ -1504,7 +1536,7 @@ function HandleUpdate(eventType, eventData)
         driftIntensity_ = math.max(0, driftIntensity_ - dt * 3.0)  -- 渐出
         
         -- 非漂移状态下，速度越快转向越低，最低60%
-        local steeringFactor = 1.0 - speedRatio * 0.8  -- 从100%降到40%
+        local steeringFactor = 1.0 - speedRatio * 0.5  -- 从100%降到60%
         targetSteering = targetSteering * steeringFactor
     end
     
@@ -2208,7 +2240,7 @@ end
 function DrawResetButton(width, height)
     local btn = RESET_BUTTON
     local btnX = width - btn.rightMargin - btn.width
-    local btnY = btn.topMargin
+    local btnY = btn.topMargin+100
     
     local mouseX = input.mousePosition.x
     local mouseY = input.mousePosition.y
@@ -2654,7 +2686,7 @@ function DrawConfigPanel(width, height)
     
     -- 悬挂刚度
     local newStiffness = DrawSlider("suspension_stiffness", "悬挂刚度", labelX, startY,
-        CONFIG.SuspensionStiffness, 10, 2000, "%.0f")
+        CONFIG.SuspensionStiffness, 10, 1000, "%.0f")
     if newStiffness ~= CONFIG.SuspensionStiffness then
         CONFIG.SuspensionStiffness = newStiffness
         ApplySuspensionSettings()
@@ -2663,7 +2695,7 @@ function DrawConfigPanel(width, height)
     
     -- 悬挂阻尼
     local newDamping = DrawSlider("suspension_damping", "悬挂阻尼", labelX, startY,
-        CONFIG.SuspensionDamping, 1, 100, "%.1f")
+        CONFIG.SuspensionDamping, 0, 200, "%.1f")
     if newDamping ~= CONFIG.SuspensionDamping then
         CONFIG.SuspensionDamping = newDamping
         ApplySuspensionSettings()
@@ -2672,10 +2704,19 @@ function DrawConfigPanel(width, height)
     
     -- 压缩阻尼
     local newCompression = DrawSlider("suspension_compression", "压缩阻尼", labelX, startY,
-        CONFIG.SuspensionCompression, 0.5, 100, "%.1f")
+        CONFIG.SuspensionCompression, 0, 200, "%.1f")
     if newCompression ~= CONFIG.SuspensionCompression then
         CONFIG.SuspensionCompression = newCompression
         ApplySuspensionSettings()
+    end
+    startY = startY + lineHeight
+    
+    -- 悬挂静止长度（最大压缩行程）- 需要按R重置车辆后生效
+    local newRestLength = DrawSlider("suspension_rest_length", "行程(按R)", labelX, startY,
+        CONFIG.SuspensionRestLength, 0.1, 1.0, "%.2f m")
+    if newRestLength ~= CONFIG.SuspensionRestLength then
+        CONFIG.SuspensionRestLength = newRestLength
+        -- 注意：悬挂静止长度需要重建车辆才能生效
     end
     startY = startY + lineHeight
     
@@ -2739,6 +2780,7 @@ function ApplySuspensionSettings()
         vehicle_:SetWheelDampingRelaxation(i, CONFIG.SuspensionDamping)
         vehicle_:SetWheelDampingCompression(i, CONFIG.SuspensionCompression)
         vehicle_:SetWheelRollInfluence(i, CONFIG.RollInfluence)
+        -- 注意：SuspensionRestLength 需要重建车辆才能生效（在 AddWheel 时设置）
     end
 end
 
@@ -2780,13 +2822,14 @@ function GetSliderAtPosition(mouseX, mouseY)
         {name = "suspension_stiffness", y = baseY + lineHeight * 8 + 56},
         {name = "suspension_damping", y = baseY + lineHeight * 9 + 56},
         {name = "suspension_compression", y = baseY + lineHeight * 10 + 56},
-        {name = "roll_influence", y = baseY + lineHeight * 11 + 56},
-        {name = "drift_min_speed", y = baseY + lineHeight * 12 + 84},
-        {name = "drift_steering", y = baseY + lineHeight * 13 + 84},
-        {name = "drift_friction", y = baseY + lineHeight * 14 + 84},
-        {name = "drift_recovery", y = baseY + lineHeight * 15 + 84},
-        {name = "drift_compensation", y = baseY + lineHeight * 16 + 84},
-        {name = "coast_turn_retain", y = baseY + lineHeight * 17 + 84},
+        {name = "suspension_rest_length", y = baseY + lineHeight * 11 + 56},
+        {name = "roll_influence", y = baseY + lineHeight * 12 + 56},
+        {name = "drift_min_speed", y = baseY + lineHeight * 13 + 84},
+        {name = "drift_steering", y = baseY + lineHeight * 14 + 84},
+        {name = "drift_friction", y = baseY + lineHeight * 15 + 84},
+        {name = "drift_recovery", y = baseY + lineHeight * 16 + 84},
+        {name = "drift_compensation", y = baseY + lineHeight * 17 + 84},
+        {name = "coast_turn_retain", y = baseY + lineHeight * 18 + 84},
     }
     
     for _, slider in ipairs(sliders) do
