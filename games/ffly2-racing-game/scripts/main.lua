@@ -22,6 +22,9 @@ local nvg_ = nil
 -- 游戏配置
 local CONFIG = {
     Title = "3D 赛车游戏",
+    
+    -- 战斗系统开关
+    EnableCombatSystem = false,  -- 是否启用敌人、导弹系统
         
     -- 车辆参数
     VehicleMass = 500.0,        -- 车辆质量 (kg)
@@ -58,7 +61,7 @@ local CONFIG = {
     DriftForceCompensation = 0.1, -- 漂移力代偿指数 (开方数值)
     
     -- 滑行转弯参数
-    CoastTurnSpeedRetain = 0.6,   -- 滑行转弯时的速度保持率 (0-1, 1=完全保持)
+    CoastTurnSpeedRetain = 0.2,   -- 滑行转弯时的速度保持率 (0-1, 1=完全保持)
     
     -- 前轮摩擦力（基于速度）- 保持较高以确保转向
     FrontBaseFriction = 2.5,      -- 前轮默认摩擦力（静止时）
@@ -78,23 +81,24 @@ local CarSetting = {
         Title = '蓝色跑车',
         -- 外观参数
         BodyColor = Color(0.1, 0.2, 0.5, 1.0),   -- 车身颜色（深蓝色）
+        BodyScale = Vector3(1, 0.5, 2.5),       -- 车身缩放
         WheelRadius = 0.35,                       -- 轮子半径
         WheelWidth = 0.3,                         -- 轮子宽度
-        WheelHeight = -0.05,                      -- 轮子高度（悬挂连接点Y位置）
+        WheelHeight = -0.15,                      -- 轮子高度（悬挂连接点Y位置）
         
         -- 车辆参数
         VehicleMass = 800.0,        -- 车辆质量 (kg)
         FrontEngineForce = 2500.0,  -- 前轮动力
         RearEngineForce = 5000.0,   -- 后轮动力
         BrakeForce = 500.0,         -- 刹车力度
-        MaxSteeringAngle = 0.2,     -- 最大转向角度（弧度）
+        MaxSteeringAngle = 0.25,     -- 最大转向角度（弧度）
         SteeringSpeed = 2.0,        -- 转向速度
         
         -- 悬挂参数
         SuspensionStiffness = 50.0,    -- 悬挂刚度
         SuspensionDamping = 150,       -- 悬挂阻尼
         SuspensionCompression = 100,   -- 压缩阻尼
-        SuspensionRestLength = 0.15,   -- 悬挂静止长度（米），控制最大压缩行程
+        SuspensionRestLength = 0.05,   -- 悬挂静止长度（米），控制最大压缩行程
         WheelFriction = 2.0,           -- 轮胎摩擦力
         RollInfluence = 0.01,           -- 侧倾影响（降低防止翻车）
         
@@ -133,23 +137,24 @@ local CarSetting = {
         Title = '红色越野',
         -- 外观参数
         BodyColor = Color(0.6, 0.1, 0.1, 1.0),   -- 车身颜色（红色）
+        BodyScale = Vector3(1.2, 0.65, 2.5),       -- 车身缩放
         WheelRadius = 0.45,                       -- 轮子半径（更大）
         WheelWidth = 0.4,                        -- 轮子宽度
-        WheelHeight = -0.1,                        -- 轮子高度（越野车底盘更高）
+        WheelHeight = -0.2,                        -- 轮子高度（越野车底盘更高）
         
         -- 车辆参数
         VehicleMass = 800.0,        -- 车辆质量 (kg)
         FrontEngineForce = 4000.0,  -- 前轮动力
         RearEngineForce = 3000.0,   -- 后轮动力
         BrakeForce = 500.0,         -- 刹车力度
-        MaxSteeringAngle = 0.2,     -- 最大转向角度（弧度）
+        MaxSteeringAngle = 0.25,     -- 最大转向角度（弧度）
         SteeringSpeed = 2.0,        -- 转向速度
         
         -- 悬挂参数
         SuspensionStiffness = 50.0,    -- 悬挂刚度
         SuspensionDamping = 150,       -- 悬挂阻尼
         SuspensionCompression = 100,   -- 压缩阻尼
-        SuspensionRestLength = 0.15,   -- 悬挂静止长度（米），控制最大压缩行程
+        SuspensionRestLength = 0.05,   -- 悬挂静止长度（米），控制最大压缩行程
         WheelFriction = 2.0,           -- 轮胎摩擦力
         RollInfluence = 0.01,           -- 侧倾影响（降低防止翻车）
         
@@ -222,6 +227,11 @@ local TrackConfig = {
         -- 装饰物
         TreeCount = 30,
         InnerTreeCount = 10,
+        -- 敌人生成配置
+        EnemyConfig = {
+            MaxEnemies = 8,           -- 最大敌人数量
+            SideOffset = 3,           -- 左右随机偏移范围（米，道路中间）
+        },
     },
     [2] = {
         Name = "8字赛道",
@@ -262,6 +272,11 @@ local TrackConfig = {
         },
         TreeCount = 25,
         InnerTreeCount = 0,
+        -- 敌人生成配置
+        EnemyConfig = {
+            MaxEnemies = 10,          -- 最大敌人数量
+            SideOffset = 4,           -- 左右随机偏移范围（米）
+        },
     },
     [3] = {
         Name = "高架路赛道",
@@ -275,7 +290,7 @@ local TrackConfig = {
         PointsType = "points",
         ControlPoints = {
             Vector3(0, 0, 0),
-            Vector3(10, 0, 0),
+            Vector3(5, 0, 0),
             Vector3(30, 2, 30),
             Vector3(0, 4, 60),
             Vector3(-30, 6, 30),
@@ -286,12 +301,13 @@ local TrackConfig = {
             Vector3(0, 16, 0),
             Vector3(25, 18, 0),
             Vector3(60, 10, 0),
-            Vector3(70, 10, -10),
-            Vector3(60, 10, -20),
-            Vector3(-10, 0, -20),
-            Vector3(-15, 0, -10),
-            Vector3(-10, 0, 0),
+            Vector3(70, 10, -15),
+            Vector3(60, 10, -30),
+            Vector3(0, 0, -30),
+            Vector3(-15, 0, -20),
             Vector3(0, 0, 0),
+            --Vector3(-5, 0, 0),
+            --Vector3(-1, 0, 0),
         },
         SegmentsPerSpan = 10,
         TrackOptions = {
@@ -303,6 +319,11 @@ local TrackConfig = {
         },
         TreeCount = 40,
         InnerTreeCount = 15,
+        -- 敌人生成配置
+        EnemyConfig = {
+            MaxEnemies = 12,          -- 最大敌人数量
+            SideOffset = 2,           -- 窄道偏移小
+        },
     },
     [4] = {
         Name = "平地测试",
@@ -334,6 +355,11 @@ local TrackConfig = {
         },
         TreeCount = 40,
         InnerTreeCount = 15,
+        -- 敌人生成配置
+        EnemyConfig = {
+            MaxEnemies = 6,
+            SideOffset = 3,
+        },
     },
     [5] = {
         Name = "上下坡",
@@ -363,7 +389,95 @@ local TrackConfig = {
         },
         TreeCount = 40,
         InnerTreeCount = 15,
+        -- 敌人生成配置
+        EnemyConfig = {
+            MaxEnemies = 8,
+            SideOffset = 3,
+        },
     },
+    [6] = {
+        Name = "测试",
+        Description = "测试",
+        TrackType = "loop",
+        Width = 12,
+        -- 起点在第一个控制点 (-80, 0, 0)
+        StartPosition = Vector3(0, 0, 0),
+        -- 方向：从(-80,0)到(-60,30)，dirX=20, dirZ=30, atan2(20,30)≈34°
+        StartRotation = 90,
+        PointsType = "points",
+        ControlPoints = {
+            Vector3(0, 0, 0),
+            Vector3(5, 0, 0),
+            Vector3(6, 0, 0),
+            Vector3(10, 0, 0),
+            Vector3(100, 0, 0),
+            Vector3(100, 0, 20),
+            Vector3(0, 0, 20),
+            Vector3(-1, 0, 0),
+        },
+        SegmentsPerSpan = 10,
+        TrackOptions = {
+            barrierHeight = 0.07,
+            barrierWidth = 0.5,
+            barrierColor = Color(1.0, 0.8, 0.2),
+            trackColor = Color(0.2, 0.18, 0.15),
+            closedLoop = true,
+        },
+        TreeCount = 40,
+        InnerTreeCount = 15,
+        -- 敌人生成配置
+        EnemyConfig = {
+            MaxEnemies = 10,
+            SideOffset = 4,
+        },
+    },
+--    [7] = {
+--        Name = "高架路赛道",
+--        Description = "S形连续弯道，挑战极限操控",
+--        TrackType = "loop",
+--        Width = 12,
+--        -- 起点在第一个控制点 (-80, 0, 0)
+--        StartPosition = Vector3(0, 0, 0),
+--        -- 方向：从(-80,0)到(-60,30)，dirX=20, dirZ=30, atan2(20,30)≈34°
+--        StartRotation = 0,
+--        PointsType = "points",
+--        ControlPoints = {
+--            Vector3(0, 0, 0),--Vector3(0, 0, 0),
+--            Vector3(0, 0, 5),--Vector3(5, 0, 0),
+--            Vector3(30, 2, 30),--Vector3(30, 2, 30),
+--            Vector3(60, 4, 0),--Vector3(0, 4, 60),
+--            Vector3(30, 6, -30),--Vector3(-30, 6, 30),
+--            Vector3(0, 8, 0),--Vector3(0, 8, 0),
+--            Vector3(30, 10, 30),--Vector3(30, 10, 30),
+--            Vector3(60, 12, 0),--Vector3(0, 12, 60),
+--            Vector3(30, 14, -30),--Vector3(-30, 14, 30),
+--            Vector3(0, 16, 0),--Vector3(0, 16, 0),
+--            Vector3(0, 18, 25),--Vector3(25, 18, 0),
+--            Vector3(0, 10, 60),--Vector3(60, 10, 0),
+--            Vector3(-15, 10, 70),--Vector3(70, 10, -15),
+--            Vector3(-30, 10, 60),--Vector3(60, 10, -30),
+--            Vector3(-30, 0, 0),--Vector3(0, 0, -30),
+--            Vector3(-20, 0, -15),--Vector3(-15, 0, -20),
+--            --Vector3(0, 0, 0),--Vector3(0, 0, 0),
+--            --Vector3(-5, 0, 0),
+--            --Vector3(-1, 0, 0),
+--        },
+--        SegmentsPerSpan = 10,
+--        TrackOptions = {
+--            barrierHeight = 0.7,
+--            barrierWidth = 0.5,
+--            barrierColor = Color(1.0, 0.8, 0.2),
+--            trackColor = Color(0.2, 0.18, 0.15),
+--            closedLoop = true,
+--        },
+--        TreeCount = 40,
+--        InnerTreeCount = 15,
+--        -- 敌人生成配置
+--        EnemyConfig = {
+--            MaxEnemies = 12,          -- 最大敌人数量
+--            SideOffset = 2,           -- 窄道偏移小
+--        },
+--    },
 }
 
 -- 当前赛道索引
@@ -398,10 +512,43 @@ local smokeBalls_ = {}            -- 活跃的烟雾球列表
 local configPanelOpen_ = false    -- 面板是否打开
 local activeSlider_ = nil         -- 当前正在拖动的滑块名称
 local sliderDragging_ = false     -- 是否正在拖动滑块
+local activeToggle_ = nil         -- 当前点击的开关名称
 local currentCarSetting_ = 1      -- 当前选中的车辆配置索引
 
 -- 虚拟按钮状态
 local driftButtonPressed_ = false -- 漂移按钮是否按下
+local fireButtonPressed_ = false  -- 发射按钮是否按下
+
+-- ============================================================================
+-- 导弹与敌人系统配置
+-- ============================================================================
+local MISSILE_CONFIG = {
+    FireCooldown = 0.1,        -- 发射冷却时间（秒）
+    SearchRange = 50.0,        -- 搜索敌人范围
+    Speed = 80.0,              -- 导弹速度 (m/s)
+    TurnSpeed = 16,           -- 导弹转向速度
+    ExplosionRadius = 2.0,     -- 爆炸半径
+    LifeTime = 3.0,            -- 导弹存活时间
+    Size = 0.3,                -- 导弹大小
+}
+
+local ENEMY_CONFIG = {
+    MaxEnemies = 8,            -- 最大敌人数量（默认值）
+    ScorePerKill = 100,        -- 击杀得分
+    Size = 1.0,                -- 敌人大小
+    HitRadius = 1.5,           -- 碰撞半径
+    SideOffset = 3,            -- 左右偏移范围（默认值）
+}
+
+-- 导弹与敌人状态
+local missiles_ = {}           -- 活跃的导弹列表
+local enemies_ = {}            -- 活跃的敌人列表
+local lastFireTime_ = -999     -- 上次发射时间（初始为负数允许立即发射）
+local gameScore_ = 0           -- 当前分数
+local totalKills_ = 0          -- 总击杀数
+local missileMaterial_ = nil   -- 导弹材质
+local enemyMaterial_ = nil     -- 敌人材质
+local explosionBalls_ = {}     -- 爆炸效果列表
 
 -- ============================================================================
 -- 2. 生命周期函数
@@ -416,6 +563,7 @@ function Start()
     CreateVehicle()
     CreateRaceTrack()
     CreateSmokeEffect()  -- 初始化烟雾粒子效果
+    CreateMissileAndEnemyMaterials()  -- 初始化导弹和敌人材质
     SetupViewport()
     SubscribeToEvents()
     TestAssets()
@@ -425,6 +573,7 @@ function Start()
     
     print("=== 3D 赛车游戏启动 ===")
     print("方向键/WASD 控制，空格刹车，R 重置位置")
+    print("检测到敌人时导弹自动发射")
 end
 
 function Stop()
@@ -565,7 +714,7 @@ function CreateVehicle()
     bodyModel.castShadows = true
     
     -- 车身尺寸：宽 1.2m × 高 0.5m × 长 2.5m
-    bodyNode.scale = Vector3(0.6, 0.5, 2.5)
+    bodyNode.scale = CONFIG.BodyScale or Vector3(0.6, 0.5, 2.5)
     bodyNode.position = Vector3(0, 0.5, 0)  -- 相对于车辆节点，向上偏移 0.5m
     
     -- ========================================
@@ -740,11 +889,17 @@ function CreateTrackFromConfig(trackIndex)
     
     -- 创建赛道
     local segmentsPerSpan = config.SegmentsPerSpan or 8
-    CreateSmoothTrackFromPoints(controlPoints, config.Width, segmentsPerSpan, config.TrackOptions)
+    -- 将起始点位置传递给赛道创建函数，用于在起始点附近不创建围栏
+    local trackOptions = config.TrackOptions or {}
+    trackOptions.startPosition = config.StartPosition
+    -- 排除半径 = 赛道宽度的一半（护栏在边缘） + 5米余量（确保覆盖入口区域）
+    trackOptions.startExcludeRadius = (config.Width / 2) + 5
+    CreateSmoothTrackFromPoints(controlPoints, config.Width, segmentsPerSpan, trackOptions)
     
-    -- 起点标记
+    -- 起点标记（跟随赛道初始角度）
     local startPos = config.StartPosition or Vector3(0, 0, 0)
-    CreateStartLine(Vector3(startPos.x, 0.1, startPos.z - 2))
+    local startRotation = config.StartRotation or 0
+    CreateStartLine(Vector3(startPos.x, 0.1, startPos.z), startRotation)
     
     -- 装饰物（树木）
     local treeCount = config.TreeCount or 20
@@ -770,6 +925,9 @@ function CreateTrackFromConfig(trackIndex)
         end
     end
     
+    -- 在赛道上生成初始敌人
+    SpawnInitialEnemies()
+    
     print(string.format("赛道 [%s] 创建完成", config.Name))
 end
 
@@ -786,6 +944,9 @@ function SwitchTrack(trackIndex)
     
     -- 清除现有赛道元素
     ClearTrackElements()
+    
+    -- 清除导弹和敌人
+    ClearMissilesAndEnemies()
     
     -- 销毁旧车辆（轮子方向需要根据新赛道朝向重新设置）
     if vehicleNode_ then
@@ -807,6 +968,10 @@ function SwitchTrack(trackIndex)
     raceStarted_ = false
     currentSpeed_ = 0
     currentSteering_ = 0
+    
+    -- 重置战斗状态（可选，如果想保留分数就注释掉下面两行）
+    -- gameScore_ = 0
+    -- totalKills_ = 0
     
     print(string.format("已切换到赛道: %s", config.Name))
 end
@@ -846,6 +1011,7 @@ function GetTrackCount()
 end
 
 function CreateGround(position, size, color)
+    --do return end
     local node = scene_:CreateChild("Ground")
     node.position = position
     node.scale = size
@@ -1005,10 +1171,14 @@ function CreateBarrier(position, size, color, yRotation, pitchAngle)
     shape:SetBox(Vector3.ONE)
 end
 
-function CreateStartLine(position)
+function CreateStartLine(position, rotation)
     local node = scene_:CreateChild("StartLine")
     node.position = position
     node.scale = Vector3(15, 0.05, 2)
+    
+    -- 跟随赛道初始角度旋转
+    local yRotation = rotation or 0
+    node.rotation = Quaternion(yRotation, Vector3.UP)
     
     local model = node:CreateComponent("StaticModel")
     model:SetModel(cache:GetResource("Model", "Models/Box.mdl"))
@@ -1066,6 +1236,89 @@ end
 -- 5.5 赛道生成 API
 -- ============================================================================
 
+--- 将角度归一化到 [-180, 180] 范围
+---@param angle number 输入角度（度）
+---@return number 归一化后的角度
+local function NormalizeAngle(angle)
+    angle = angle % 360
+    if angle > 180 then angle = angle - 360 end
+    if angle < -180 then angle = angle + 360 end
+    return angle
+end
+
+--- 计算两个角度之间的最短差值（考虑周期性）
+---@param from number 起始角度
+---@param to number 目标角度
+---@return number 最短角度差（可正可负）
+local function ShortestAngleDiff(from, to)
+    local diff = NormalizeAngle(to - from)
+    return diff
+end
+
+--- 平滑过渡角度，避免超过180度的跳变
+--- 根据前一个角度调整当前角度，确保差值不超过180度
+---@param currentAngle number 当前计算的角度（来自 atan2，范围 [-180, 180]）
+---@param prevAngle number|nil 前一段的角度（nil 表示第一段，可能超出 [-180, 180]）
+---@return number 调整后的角度（与 prevAngle 连续）
+local function SmoothAngleTransition(currentAngle, prevAngle)
+    if prevAngle == nil then
+        return currentAngle
+    end
+    
+    -- 计算最短角度差
+    local shortestDiff = ShortestAngleDiff(prevAngle, currentAngle)
+    
+    -- 基于前一个角度加上最短差值，保证连续性
+    return prevAngle + shortestDiff
+end
+
+--- 对点数组进行 Catmull-Rom 平滑处理
+---@param points table 原始点数组
+---@param subdivisions number 每段细分数量
+---@param closedLoop boolean 是否闭合
+---@return table 平滑后的点数组
+local function SmoothPoints(points, subdivisions, closedLoop)
+    if #points < 3 or subdivisions <= 1 then
+        return points
+    end
+    
+    local result = {}
+    local n = #points
+    
+    -- 辅助函数：安全获取循环索引的点
+    local function getPoint(idx)
+        if closedLoop then
+            return points[(idx - 1) % n + 1]
+        else
+            return points[math.max(1, math.min(n, idx))]
+        end
+    end
+    
+    -- 确定要处理的段数
+    local numSegments = closedLoop and n or (n - 1)
+    
+    for i = 1, numSegments do
+        -- 获取四个控制点 (p0, p1, p2, p3)
+        local p0 = getPoint(i - 1)
+        local p1 = getPoint(i)
+        local p2 = getPoint(i + 1)
+        local p3 = getPoint(i + 2)
+        
+        -- 在 p1 和 p2 之间插入细分点
+        for j = 0, subdivisions - 1 do
+            local t = j / subdivisions
+            table.insert(result, CatmullRomInterpolate(p0, p1, p2, p3, t))
+        end
+    end
+    
+    -- 非闭合赛道添加最后一个点
+    if not closedLoop then
+        table.insert(result, points[n])
+    end
+    
+    return result
+end
+
 --- 根据点数组创建赛道
 --- 根据传入的路径点和宽度，自动生成赛道路面和两侧栏杆
 ---@param points table 点数组，每个点是 Vector3，表示赛道中心线的控制点
@@ -1079,6 +1332,7 @@ end
 ---  options.createTrackSurface: 是否创建赛道路面（默认 true）
 ---  options.createBarriers: 是否创建栏杆（默认 true）
 ---  options.closedLoop: 是否闭合赛道（默认 false，首尾相连）
+---  options.smoothness: 平滑度（每段细分数量，默认 5，0 表示不平滑）
 ---@return table 创建的节点列表
 function CreateTrackFromPoints(points, width, options)
     if not points or #points < 2 then
@@ -1096,19 +1350,17 @@ function CreateTrackFromPoints(points, width, options)
     local createTrackSurface = options.createTrackSurface ~= false  -- 默认 true
     local createBarriers = options.createBarriers ~= false  -- 默认 true
     local closedLoop = options.closedLoop or false
+    local smoothness = options.smoothness or 5  -- 默认平滑度
     
     local createdNodes = {}
     local numPoints = #points
     
     -- ========================================
-    -- 第一步：统计所有点的位置和方向信息
+    -- 第一步：统计道路中心点和两侧护栏点（原始点）
     -- ========================================
-    local trackData = {}  -- 赛道中心点数据
-    local leftBarrierPoints = {}   -- 左侧护栏点
-    local rightBarrierPoints = {}  -- 右侧护栏点
-    
-    -- 如果是闭合赛道，需要额外处理首尾连接
-    local totalSegments = closedLoop and numPoints or (numPoints - 1)
+    local centerPoints = {}        -- 道路中心点
+    local leftBarrierRaw = {}      -- 左侧护栏原始点
+    local rightBarrierRaw = {}     -- 右侧护栏原始点
     
     for i = 1, numPoints do
         local p = points[i]
@@ -1122,11 +1374,10 @@ function CreateTrackFromPoints(points, width, options)
         
         -- 计算方向向量
         local dirX = next.x - prev.x
-        local dirY = next.y - prev.y
         local dirZ = next.z - prev.z
         local horizontalLength = math.sqrt(dirX * dirX + dirZ * dirZ)
         
-        if horizontalLength > 0. then
+        if horizontalLength > 0.001 then
             -- 归一化水平方向
             local normX = dirX / horizontalLength
             local normZ = dirZ / horizontalLength
@@ -1141,128 +1392,288 @@ function CreateTrackFromPoints(points, width, options)
             local rightX = p.x - perpX * (width / 2)
             local rightZ = p.z - perpZ * (width / 2)
             
-            -- 存储数据
-            table.insert(trackData, {
-                center = p,
-                perpX = perpX,
-                perpZ = perpZ,
-            })
-            
-            table.insert(leftBarrierPoints, Vector3(leftX, p.y, leftZ))
-            table.insert(rightBarrierPoints, Vector3(rightX, p.y, rightZ))
+            -- 存储原始点
+            table.insert(centerPoints, p)
+            table.insert(leftBarrierRaw, Vector3(leftX, p.y, leftZ))
+            table.insert(rightBarrierRaw, Vector3(rightX, p.y, rightZ))
         end
     end
     
     -- ========================================
-    -- 第二步：根据统计的点创建赛道路面
+    -- 第二步：分别对三组点进行平滑处理
+    -- ========================================
+    local smoothCenterPoints = centerPoints
+    local smoothLeftBarrier = leftBarrierRaw
+    local smoothRightBarrier = rightBarrierRaw
+    
+    if smoothness > 1 and #centerPoints >= 3 then
+        print(string.format("开始平滑处理: 原始点数 %d, 平滑度 %d", #centerPoints, smoothness))
+        
+        -- 分别平滑道路中心和两侧护栏
+        smoothCenterPoints = SmoothPoints(centerPoints, smoothness, closedLoop)
+        smoothLeftBarrier = SmoothPoints(leftBarrierRaw, smoothness, closedLoop)
+        smoothRightBarrier = SmoothPoints(rightBarrierRaw, smoothness, closedLoop)
+        
+        print(string.format("平滑后: 中心点 %d, 左护栏点 %d, 右护栏点 %d", 
+            #smoothCenterPoints, #smoothLeftBarrier, #smoothRightBarrier))
+    end
+    
+    -- 如果是闭合赛道，需要额外处理首尾连接
+    local totalSegments = closedLoop and #smoothCenterPoints or (#smoothCenterPoints - 1)
+    
+    -- ========================================
+    -- 第三步：根据平滑后的点创建赛道路面（先收集数据再平滑角度）
     -- ========================================
     if createTrackSurface then
+        local numCenterPoints = #smoothCenterPoints
+        
+        -- 3.1 收集所有段的数据（位置、尺寸、原始角度）
+        local segmentData = {}
         for i = 1, totalSegments do
             local idx1 = i
-            local idx2 = closedLoop and (i % #trackData + 1) or math.min(i + 1, #trackData)
+            local idx2 = closedLoop and (i % numCenterPoints + 1) or math.min(i + 1, numCenterPoints)
             
-            if idx1 <= #trackData and idx2 <= #trackData then
-                local p1 = trackData[idx1].center
-                local p2 = trackData[idx2].center
+            if idx1 <= numCenterPoints and idx2 <= numCenterPoints then
+                local p1 = smoothCenterPoints[idx1]
+                local p2 = smoothCenterPoints[idx2]
                 
-                -- 计算段的方向和长度
                 local dirX = p2.x - p1.x
                 local dirY = p2.y - p1.y
                 local dirZ = p2.z - p1.z
                 local horizontalLength = math.sqrt(dirX * dirX + dirZ * dirZ)
-                local totalLength = math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ)
                 
-                if horizontalLength > 0.01 then
-                    -- 计算中点
-                    local midX = (p1.x + p2.x) / 2
-                    local midY = (p1.y + p2.y) / 2
-                    local midZ = (p1.z + p2.z) / 2
-                    
-                    -- 计算旋转角度
-                    local yRotation = math.atan2(dirX, dirZ) * 180 / math.pi
-                    local pitchAngle = -math.atan2(dirY, horizontalLength) * 180 / math.pi
-                    
-                    local trackPos = Vector3(midX, midY, midZ)
-                    local trackSize = Vector3(width, trackHeight, totalLength)
-                    CreateTrackPiece(trackPos, trackSize, trackColor, yRotation, pitchAngle)
+                -- 计算两侧护栏的距离，取较长的那个作为道路段长度
+                local leftLength = 0
+                local rightLength = 0
+                local leftIdx2 = closedLoop and (i % #smoothLeftBarrier + 1) or math.min(i + 1, #smoothLeftBarrier)
+                local rightIdx2 = closedLoop and (i % #smoothRightBarrier + 1) or math.min(i + 1, #smoothRightBarrier)
+                
+                if idx1 <= #smoothLeftBarrier and leftIdx2 <= #smoothLeftBarrier then
+                    local lp1 = smoothLeftBarrier[idx1]
+                    local lp2 = smoothLeftBarrier[leftIdx2]
+                    local ldx = lp2.x - lp1.x
+                    local ldy = lp2.y - lp1.y
+                    local ldz = lp2.z - lp1.z
+                    leftLength = math.sqrt(ldx * ldx + ldy * ldy + ldz * ldz)
                 end
-            end
-        end
-    end
-    
-    -- ========================================
-    -- 第三步：根据统计的护栏点创建护栏
-    -- ========================================
-    if createBarriers then
-        -- 创建左侧护栏
-        for i = 1, totalSegments do
-            local idx1 = i
-            local idx2 = closedLoop and (i % #leftBarrierPoints + 1) or math.min(i + 1, #leftBarrierPoints)
-            
-            if idx1 <= #leftBarrierPoints and idx2 <= #leftBarrierPoints then
-                local p1 = leftBarrierPoints[idx1]
-                local p2 = leftBarrierPoints[idx2]
                 
-                -- 计算段的方向和长度
-                local dirX = p2.x - p1.x
-                local dirY = p2.y - p1.y
-                local dirZ = p2.z - p1.z
-                local horizontalLength = math.sqrt(dirX * dirX + dirZ * dirZ)
-                local totalLength = math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ)
+                if idx1 <= #smoothRightBarrier and rightIdx2 <= #smoothRightBarrier then
+                    local rp1 = smoothRightBarrier[idx1]
+                    local rp2 = smoothRightBarrier[rightIdx2]
+                    local rdx = rp2.x - rp1.x
+                    local rdy = rp2.y - rp1.y
+                    local rdz = rp2.z - rp1.z
+                    rightLength = math.sqrt(rdx * rdx + rdy * rdy + rdz * rdz)
+                end
+                
+                local totalLength = math.max(leftLength, rightLength)
                 
                 if horizontalLength > 0.01 then
-                    -- 计算中点
-                    local midX = (p1.x + p2.x) / 2
-                    local midY = (p1.y + p2.y) / 2 + barrierHeight / 2
-                    local midZ = (p1.z + p2.z) / 2
-                    
-                    -- 计算旋转角度
-                    local yRotation = math.atan2(dirX, dirZ) * 180 / math.pi
-                    local pitchAngle = -math.atan2(dirY, horizontalLength) * 180 / math.pi
-                    
-                    local barrierPos = Vector3(midX, midY, midZ)
-                    local barrierSize = Vector3(barrierWidth, barrierHeight, totalLength)
-                    CreateBarrier(barrierPos, barrierSize, barrierColor, yRotation, pitchAngle)
+                    table.insert(segmentData, {
+                        midX = (p1.x + p2.x) / 2,
+                        midY = (p1.y + p2.y) / 2,
+                        midZ = (p1.z + p2.z) / 2,
+                        length = totalLength,
+                        yRotation = math.atan2(dirX, dirZ) * 180 / math.pi,
+                        pitchAngle = -math.atan2(dirY, horizontalLength) * 180 / math.pi,
+                    })
                 end
             end
         end
         
-        -- 创建右侧护栏
-        for i = 1, totalSegments do
-            local idx1 = i
-            local idx2 = closedLoop and (i % #rightBarrierPoints + 1) or math.min(i + 1, #rightBarrierPoints)
+        -- 3.2 对角度序列进行平滑处理
+        if #segmentData >= 2 then
+            local numSegs = #segmentData
             
-            if idx1 <= #rightBarrierPoints and idx2 <= #rightBarrierPoints then
-                local p1 = rightBarrierPoints[idx1]
-                local p2 = rightBarrierPoints[idx2]
+            -- 闭合赛道：用最后一段的角度初始化，保证首尾连续
+            local prevYRot = closedLoop and segmentData[numSegs].yRotation or nil
+            local prevPitch = closedLoop and segmentData[numSegs].pitchAngle or nil
+            
+            -- 第一遍：从前往后平滑角度
+            for i = 1, numSegs do
+                segmentData[i].yRotation = SmoothAngleTransition(segmentData[i].yRotation, prevYRot)
+                segmentData[i].pitchAngle = SmoothAngleTransition(segmentData[i].pitchAngle, prevPitch)
+                prevYRot = segmentData[i].yRotation
+                prevPitch = segmentData[i].pitchAngle
+            end
+            
+            -- 闭合赛道：检查首尾角度差，进行渐变插值平滑
+            if closedLoop and numSegs >= 4 then
+                local firstYRot = segmentData[1].yRotation
+                local lastYRot = segmentData[numSegs].yRotation
+                local yRotDiff = ShortestAngleDiff(lastYRot, firstYRot)
                 
-                -- 计算段的方向和长度
-                local dirX = p2.x - p1.x
-                local dirY = p2.y - p1.y
-                local dirZ = p2.z - p1.z
-                local horizontalLength = math.sqrt(dirX * dirX + dirZ * dirZ)
-                local totalLength = math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ)
+                local firstPitch = segmentData[1].pitchAngle
+                local lastPitch = segmentData[numSegs].pitchAngle
+                local pitchDiff = ShortestAngleDiff(lastPitch, firstPitch)
                 
-                if horizontalLength > 0.01 then
-                    -- 计算中点
-                    local midX = (p1.x + p2.x) / 2
-                    local midY = (p1.y + p2.y) / 2 + barrierHeight / 2
-                    local midZ = (p1.z + p2.z) / 2
+                -- 如果首尾角度差超过阈值，对末尾段进行渐变调整
+                if math.abs(yRotDiff) > 3 or math.abs(pitchDiff) > 3 then
+                    -- 渐变范围：赛道末尾的若干段
+                    local blendRange = math.min(math.floor(numSegs / 3), 15)
                     
-                    -- 计算旋转角度
-                    local yRotation = math.atan2(dirX, dirZ) * 180 / math.pi
-                    local pitchAngle = -math.atan2(dirY, horizontalLength) * 180 / math.pi
-                    
-                    local barrierPos = Vector3(midX, midY, midZ)
-                    local barrierSize = Vector3(barrierWidth, barrierHeight, totalLength)
-                    CreateBarrier(barrierPos, barrierSize, barrierColor, yRotation, pitchAngle)
+                    for j = 1, blendRange do
+                        local blendFactor = j / blendRange  -- 0->1 渐变
+                        local idx = numSegs - blendRange + j
+                        
+                        if idx >= 1 then
+                            -- 计算该段应该达到的目标角度（线性插值到第一段）
+                            local targetYRot = lastYRot + yRotDiff * blendFactor
+                            local targetPitch = lastPitch + pitchDiff * blendFactor
+                            
+                            -- 平滑混合当前角度和目标角度
+                            segmentData[idx].yRotation = segmentData[idx].yRotation + 
+                                (targetYRot - segmentData[idx].yRotation) * blendFactor
+                            segmentData[idx].pitchAngle = segmentData[idx].pitchAngle + 
+                                (targetPitch - segmentData[idx].pitchAngle) * blendFactor
+                        end
+                    end
                 end
             end
         end
+        
+        -- 3.3 根据平滑后的角度创建道路段
+        for _, seg in ipairs(segmentData) do
+            local trackPos = Vector3(seg.midX, seg.midY, seg.midZ)
+            local trackSize = Vector3(width, trackHeight, seg.length)
+            CreateTrackPiece(trackPos, trackSize, trackColor, seg.yRotation, seg.pitchAngle)
+        end
     end
     
-    print(string.format("赛道创建完成: %d 个路段, 宽度 %.1f, 左护栏点 %d, 右护栏点 %d", 
-        totalSegments, width, #leftBarrierPoints, #rightBarrierPoints))
+    -- ========================================
+    -- 第四步：根据平滑后的护栏点创建护栏（使用相同的角度平滑逻辑）
+    -- ========================================
+    -- 获取起始点排除参数（用于在起始点附近不创建围栏）
+    local startPosition = options.startPosition
+    local startExcludeRadius = options.startExcludeRadius or 5
+    local startExcludeHeight = 2  -- 只排除出生点高度 ±2 米以内的护栏
+    local excludedBarrierCount = 0  -- 统计排除的护栏数量
+    
+    -- 辅助函数：检查位置是否在起始点附近（需要排除围栏）
+    -- 条件：XZ 平面距离小于排除半径 且 高度差在 ±2 米以内
+    local function isNearStartPosition(posX, posY, posZ)
+        if not startPosition then return false end
+        local dx = posX - startPosition.x
+        local dz = posZ - startPosition.z
+        local horizontalDist = math.sqrt(dx * dx + dz * dz)
+        -- 高度差：护栏高度与出生点高度的差值
+        local heightDiff = math.abs(posY - startPosition.y)
+        -- 水平距离在排除范围内 且 高度差在 ±2 米以内
+        local isNear = horizontalDist < startExcludeRadius and heightDiff < startExcludeHeight
+        if isNear then
+            excludedBarrierCount = excludedBarrierCount + 1
+        end
+        return isNear
+    end
+    
+    if createBarriers then
+        -- 辅助函数：收集护栏段数据并平滑角度
+        local function collectAndSmoothBarrierData(barrierPoints, yOffset)
+            local numPoints = #barrierPoints
+            local barrierData = {}
+            
+            -- 收集所有段的数据
+            for i = 1, totalSegments do
+                local idx1 = i
+                local idx2 = closedLoop and (i % numPoints + 1) or math.min(i + 1, numPoints)
+                
+                if idx1 <= numPoints and idx2 <= numPoints then
+                    local p1 = barrierPoints[idx1]
+                    local p2 = barrierPoints[idx2]
+                    
+                    local dirX = p2.x - p1.x
+                    local dirY = p2.y - p1.y
+                    local dirZ = p2.z - p1.z
+                    local horizontalLength = math.sqrt(dirX * dirX + dirZ * dirZ)
+                    local totalLength = math.sqrt(dirX * dirX + dirY * dirY + dirZ * dirZ)
+                    
+                    if horizontalLength > 0.01 then
+                        table.insert(barrierData, {
+                            midX = (p1.x + p2.x) / 2,
+                            midY = (p1.y + p2.y) / 2 + yOffset,
+                            midZ = (p1.z + p2.z) / 2,
+                            length = totalLength,
+                            yRotation = math.atan2(dirX, dirZ) * 180 / math.pi,
+                            pitchAngle = -math.atan2(dirY, horizontalLength) * 180 / math.pi,
+                        })
+                    end
+                end
+            end
+            
+            -- 平滑角度
+            if #barrierData >= 2 then
+                local numSegs = #barrierData
+                local prevYRot = closedLoop and barrierData[numSegs].yRotation or nil
+                local prevPitch = closedLoop and barrierData[numSegs].pitchAngle or nil
+                
+                for i = 1, numSegs do
+                    barrierData[i].yRotation = SmoothAngleTransition(barrierData[i].yRotation, prevYRot)
+                    barrierData[i].pitchAngle = SmoothAngleTransition(barrierData[i].pitchAngle, prevPitch)
+                    prevYRot = barrierData[i].yRotation
+                    prevPitch = barrierData[i].pitchAngle
+                end
+                
+                -- 闭合赛道首尾渐变平滑
+                if closedLoop and numSegs >= 4 then
+                    local firstYRot = barrierData[1].yRotation
+                    local lastYRot = barrierData[numSegs].yRotation
+                    local yRotDiff = ShortestAngleDiff(lastYRot, firstYRot)
+                    
+                    local firstPitch = barrierData[1].pitchAngle
+                    local lastPitch = barrierData[numSegs].pitchAngle
+                    local pitchDiff = ShortestAngleDiff(lastPitch, firstPitch)
+                    
+                    if math.abs(yRotDiff) > 3 or math.abs(pitchDiff) > 3 then
+                        local blendRange = math.min(math.floor(numSegs / 3), 15)
+                        for j = 1, blendRange do
+                            local blendFactor = j / blendRange
+                            local idx = numSegs - blendRange + j
+                            if idx >= 1 then
+                                local targetYRot = lastYRot + yRotDiff * blendFactor
+                                local targetPitch = lastPitch + pitchDiff * blendFactor
+                                barrierData[idx].yRotation = barrierData[idx].yRotation + 
+                                    (targetYRot - barrierData[idx].yRotation) * blendFactor
+                                barrierData[idx].pitchAngle = barrierData[idx].pitchAngle + 
+                                    (targetPitch - barrierData[idx].pitchAngle) * blendFactor
+                            end
+                        end
+                    end
+                end
+            end
+            
+            return barrierData
+        end
+        
+        -- 创建左侧护栏
+        local leftBarrierData = collectAndSmoothBarrierData(smoothLeftBarrier, barrierHeight / 2)
+        for _, seg in ipairs(leftBarrierData) do
+            -- 检查是否在起始点附近，如果是则跳过创建围栏
+            if not isNearStartPosition(seg.midX, seg.midY, seg.midZ) then
+                local barrierPos = Vector3(seg.midX, seg.midY, seg.midZ)
+                local barrierSize = Vector3(barrierWidth, barrierHeight, seg.length)
+                CreateBarrier(barrierPos, barrierSize, barrierColor, seg.yRotation, seg.pitchAngle)
+            end
+        end
+        
+        -- 创建右侧护栏
+        local rightBarrierData = collectAndSmoothBarrierData(smoothRightBarrier, barrierHeight / 2)
+        for _, seg in ipairs(rightBarrierData) do
+            -- 检查是否在起始点附近，如果是则跳过创建围栏
+            if not isNearStartPosition(seg.midX, seg.midY, seg.midZ) then
+                local barrierPos = Vector3(seg.midX, seg.midY, seg.midZ)
+                local barrierSize = Vector3(barrierWidth, barrierHeight, seg.length)
+                CreateBarrier(barrierPos, barrierSize, barrierColor, seg.yRotation, seg.pitchAngle)
+            end
+        end
+        
+        -- 输出排除的护栏数量
+        if excludedBarrierCount > 0 then
+            print(string.format("在起始点附近排除了 %d 段护栏 (半径: %.1f米)", excludedBarrierCount, startExcludeRadius))
+        end
+    end
+    
+    print(string.format("赛道创建完成: %d 个路段, 宽度 %.1f, 原始点 %d -> 平滑后 %d 点", 
+        totalSegments, width, #centerPoints, #smoothCenterPoints))
     return createdNodes
 end
 
@@ -1430,6 +1841,521 @@ function UpdateSmokeBalls(dt)
         smokeBalls_[idx].node:Remove()
         table.remove(smokeBalls_, idx)
     end
+end
+
+-- ============================================================================
+-- 5.6 导弹与敌人系统
+-- ============================================================================
+
+--- 创建导弹和敌人材质
+function CreateMissileAndEnemyMaterials()
+    -- 导弹材质（红色发光）
+    missileMaterial_ = Material:new()
+    missileMaterial_:SetTechnique(0, cache:GetResource("Technique", 
+        "Editor/Techniques/PBR_PackedNormal/DefaultMetallicRoughness.xml"))
+    missileMaterial_:SetShaderParameter("ColorFactor", Variant(Color(1.0, 0.3, 0.1, 1.0)))
+    missileMaterial_:SetShaderParameter("MetallicFactor", Variant(0.8))
+    missileMaterial_:SetShaderParameter("RoughnessFactor", Variant(0.2))
+    
+    -- 敌人材质（紫色）
+    enemyMaterial_ = Material:new()
+    enemyMaterial_:SetTechnique(0, cache:GetResource("Technique", 
+        "Editor/Techniques/PBR_PackedNormal/DefaultMetallicRoughness.xml"))
+    enemyMaterial_:SetShaderParameter("ColorFactor", Variant(Color(0.6, 0.1, 0.8, 1.0)))
+    enemyMaterial_:SetShaderParameter("MetallicFactor", Variant(0.5))
+    enemyMaterial_:SetShaderParameter("RoughnessFactor", Variant(0.4))
+    
+    print("导弹和敌人材质已创建")
+end
+
+--- 获取赛道上的随机位置
+---@return Vector3|nil 随机位置或 nil
+function GetRandomTrackPosition()
+    local trackConfig = GetCurrentTrackConfig()
+    if not trackConfig then return nil end
+    
+    local controlPoints = nil
+    local sideOffset = 3
+    
+    -- 获取敌人配置中的偏移量
+    if trackConfig.EnemyConfig then
+        sideOffset = trackConfig.EnemyConfig.SideOffset or 3
+    end
+    
+    -- 获取控制点
+    if trackConfig.PointsType == "ellipse" then
+        -- 椭圆赛道：生成控制点
+        local radiusX = trackConfig.EllipseRadiusX or 60
+        local radiusZ = trackConfig.EllipseRadiusZ or 40
+        local numPoints = trackConfig.EllipsePoints or 12
+        controlPoints = {}
+        for i = 1, numPoints do
+            local angle = ((i - 1) / numPoints) * math.pi * 2
+            local x = math.sin(angle) * radiusX
+            local z = math.cos(angle) * radiusZ
+            table.insert(controlPoints, Vector3(x, 0, z))
+        end
+    elseif trackConfig.PointsType == "points" then
+        controlPoints = trackConfig.ControlPoints
+    end
+    
+    if not controlPoints or #controlPoints < 2 then
+        return nil
+    end
+    
+    -- 随机选择两个相邻控制点之间的位置
+    local numPoints = #controlPoints
+    local idx1 = math.random(1, numPoints)
+    local idx2 = idx1 % numPoints + 1  -- 下一个点（循环）
+    
+    local p1 = controlPoints[idx1]
+    local p2 = controlPoints[idx2]
+    
+    -- 在两点之间随机插值
+    local t = math.random()
+    local posX = p1.x + (p2.x - p1.x) * t
+    local posY = p1.y + (p2.y - p1.y) * t
+    local posZ = p1.z + (p2.z - p1.z) * t
+    
+    -- 计算方向向量（用于左右偏移）
+    local dirX = p2.x - p1.x
+    local dirZ = p2.z - p1.z
+    local length = math.sqrt(dirX * dirX + dirZ * dirZ)
+    
+    if length > 0.01 then
+        -- 归一化并计算垂直方向
+        local perpX = -dirZ / length
+        local perpZ = dirX / length
+        
+        -- 随机左右偏移
+        local offset = (math.random() - 0.5) * 2 * sideOffset
+        posX = posX + perpX * offset
+        posZ = posZ + perpZ * offset
+    end
+    
+    return Vector3(posX, posY + 1.0, posZ)
+end
+
+--- 在赛道随机位置生成敌人（距离车辆至少 15 米）
+---@return boolean 是否成功生成
+function SpawnEnemyAtRandomPosition()
+    if scene_ == nil then return false end
+    
+    local minDistanceFromVehicle = 10  -- 距离车辆的最小距离
+    local maxAttempts = 10  -- 最大尝试次数，避免无限循环
+    
+    for attempt = 1, maxAttempts do
+        -- 获取赛道随机位置
+        local spawnPos = GetRandomTrackPosition()
+        if not spawnPos then return false end
+        
+        -- 检查与车辆的距离
+        local isFarEnough = true
+        if vehicleNode_ then
+            local vehiclePos = vehicleNode_.position
+            local dx = spawnPos.x - vehiclePos.x
+            local dy = spawnPos.y - vehiclePos.y
+            local dz = spawnPos.z - vehiclePos.z
+            local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+            isFarEnough = distance >= minDistanceFromVehicle
+        end
+        
+        -- 如果距离足够，创建敌人
+        if isFarEnough then
+            return CreateEnemyAtPosition(spawnPos)
+        end
+    end
+    
+    -- 尝试多次仍找不到合适位置，放弃本次生成
+    return false
+end
+
+--- 在指定位置创建敌人
+---@param spawnPos Vector3 生成位置
+---@return boolean 是否成功创建
+function CreateEnemyAtPosition(spawnPos)
+    if scene_ == nil or spawnPos == nil then return false end
+    
+    -- 创建敌人节点
+    local enemyNode = scene_:CreateChild("Enemy")
+    enemyNode.position = spawnPos
+    
+    -- 敌人外观（立方体 + 顶部尖刺）
+    local bodyNode = enemyNode:CreateChild("EnemyBody")
+    local bodyModel = bodyNode:CreateComponent("StaticModel")
+    bodyModel:SetModel(cache:GetResource("Model", "Models/Box.mdl"))
+    bodyModel:SetMaterial(enemyMaterial_)
+    bodyModel.castShadows = true
+    bodyNode.scale = Vector3(ENEMY_CONFIG.Size, ENEMY_CONFIG.Size, ENEMY_CONFIG.Size)
+    
+    -- 顶部尖刺
+    local spikeNode = enemyNode:CreateChild("EnemySpike")
+    spikeNode.position = Vector3(0, ENEMY_CONFIG.Size * 0.8, 0)
+    spikeNode.scale = Vector3(0.4, 0.8, 0.4)
+    local spikeModel = spikeNode:CreateComponent("StaticModel")
+    spikeModel:SetModel(cache:GetResource("Model", "Models/Cone.mdl"))
+    spikeModel:SetMaterial(enemyMaterial_)
+    spikeModel.castShadows = true
+    
+    -- 添加到敌人列表
+    table.insert(enemies_, {
+        node = enemyNode,
+        position = spawnPos,
+        health = 1,
+        rotationSpeed = 50 + math.random() * 50,  -- 旋转速度
+    })
+    
+    return true
+end
+
+--- 在赛道创建时生成初始敌人
+function SpawnInitialEnemies()
+    -- 检查战斗系统是否启用
+    if not CONFIG.EnableCombatSystem then return end
+    
+    -- 获取当前赛道配置
+    local trackConfig = GetCurrentTrackConfig()
+    if not trackConfig then return end
+    
+    -- 获取敌人配置
+    local enemyConfig = trackConfig.EnemyConfig or {}
+    local maxEnemies = enemyConfig.MaxEnemies or ENEMY_CONFIG.MaxEnemies
+    
+    -- 生成初始敌人
+    for i = 1, maxEnemies do
+        SpawnEnemyAtRandomPosition()
+    end
+    
+    print(string.format("已生成 %d 个敌人", #enemies_))
+end
+
+--- 发射导弹
+---@return boolean 是否成功发射
+function FireMissile()
+    if vehicleNode_ == nil or scene_ == nil then
+        return false
+    end
+    
+    -- 检查冷却时间
+    local currentTime = time.elapsedTime
+    if currentTime - lastFireTime_ < MISSILE_CONFIG.FireCooldown then
+        return false
+    end
+    
+    -- 搜索前方敌人
+    local target = FindNearestEnemy()
+    
+    -- 创建导弹
+    local vehiclePos = vehicleNode_.position
+    local vehicleForward = vehicleNode_.rotation * Vector3(0, 0, 1)
+    
+    -- 导弹从车辆前方发射
+    local missilePos = Vector3(
+        vehiclePos.x + vehicleForward.x * 2,
+        vehiclePos.y + 0.5,
+        vehiclePos.z + vehicleForward.z * 2
+    )
+    
+    local missileNode = scene_:CreateChild("Missile")
+    missileNode.position = missilePos
+    
+    -- 导弹模型（细长的圆柱体）
+    local missileModel = missileNode:CreateComponent("StaticModel")
+    missileModel:SetModel(cache:GetResource("Model", "Models/Cylinder.mdl"))
+    missileModel:SetMaterial(missileMaterial_)
+    missileModel.castShadows = true
+    
+    local size = MISSILE_CONFIG.Size
+    missileNode.scale = Vector3(size, size * 3, size)
+    -- 让导弹横躺（指向前方）
+    missileNode.rotation = vehicleNode_.rotation * Quaternion(90, Vector3.RIGHT)
+    
+    -- 初始方向
+    local direction = vehicleForward:Normalized()
+    
+    -- 添加到导弹列表
+    table.insert(missiles_, {
+        node = missileNode,
+        direction = direction,
+        target = target,  -- 可能为 nil
+        timer = MISSILE_CONFIG.LifeTime,
+        speed = MISSILE_CONFIG.Speed,
+    })
+    
+    lastFireTime_ = currentTime
+    
+    -- 发射音效提示
+    -- print("导弹发射！" .. (target and "锁定目标" or "无目标"))
+    
+    return true
+end
+
+--- 搜索最近的敌人（在车辆前方范围内）
+---@return table|nil 敌人数据或 nil
+function FindNearestEnemy()
+    if vehicleNode_ == nil or #enemies_ == 0 then
+        return nil
+    end
+    
+    local vehiclePos = vehicleNode_.position
+    local vehicleForward = vehicleNode_.rotation * Vector3(0, 0, 1)
+    vehicleForward.y = 0
+    vehicleForward:Normalize()
+    
+    local nearestEnemy = nil
+    local nearestDist = MISSILE_CONFIG.SearchRange
+    
+    for _, enemy in ipairs(enemies_) do
+        if enemy.node then
+            local enemyPos = enemy.node.position
+            local toEnemy = enemyPos - vehiclePos
+            local dist = toEnemy:Length()
+            
+            -- 检查距离
+            if dist < nearestDist then
+                -- 检查是否在前方（点积 > 0）
+                toEnemy.y = 0
+                toEnemy:Normalize()
+                local dot = vehicleForward:DotProduct(toEnemy)
+                
+                if dot > 0.3 then  -- 前方约 72 度范围内
+                    nearestDist = dist
+                    nearestEnemy = enemy
+                end
+            end
+        end
+    end
+    
+    return nearestEnemy
+end
+
+--- 更新所有导弹
+---@param dt number 时间步长
+function UpdateMissiles(dt)
+    local toRemove = {}
+    
+    for i, missile in ipairs(missiles_) do
+        missile.timer = missile.timer - dt
+        
+        if missile.timer <= 0 or missile.node == nil then
+            table.insert(toRemove, i)
+        else
+            -- 如果有目标，追踪目标
+            if missile.target and missile.target.node then
+                local missilePos = missile.node.position
+                local targetPos = missile.target.node.position
+                local toTarget = targetPos - missilePos
+                local dist = toTarget:Length()
+                
+                -- 检查是否击中
+                if dist < ENEMY_CONFIG.HitRadius then
+                    -- 击中敌人！
+                    OnMissileHit(missile, missile.target)
+                    table.insert(toRemove, i)
+                else
+                    -- 追踪目标
+                    toTarget:Normalize()
+                    missile.direction = missile.direction + (toTarget - missile.direction) * 
+                        math.min(1.0, dt * MISSILE_CONFIG.TurnSpeed)
+                    missile.direction:Normalize()
+                end
+            end
+            
+            -- 移动导弹
+            local pos = missile.node.position
+            pos = pos + missile.direction * missile.speed * dt
+            missile.node.position = pos
+            
+            -- 更新导弹朝向
+            if missile.direction:Length() > 0.01 then
+                local lookTarget = pos + missile.direction
+                missile.node:LookAt(lookTarget)
+                -- 修正旋转（让圆柱体尖端指向前方）
+                missile.node.rotation = missile.node.rotation * Quaternion(90, Vector3.RIGHT)
+            end
+            
+            -- 检查是否超出范围或低于地面
+            if pos.y < -5 or pos:Length() > 500 then
+                table.insert(toRemove, i)
+            end
+        end
+    end
+    
+    -- 移除失效导弹
+    for i = #toRemove, 1, -1 do
+        local idx = toRemove[i]
+        if missiles_[idx].node then
+            missiles_[idx].node:Remove()
+        end
+        table.remove(missiles_, idx)
+    end
+end
+
+--- 导弹击中敌人
+---@param missile table 导弹数据
+---@param enemy table 敌人数据
+function OnMissileHit(missile, enemy)
+    -- 检查敌人是否已死亡（被其他导弹击中）
+    if enemy.node == nil or enemy.health <= 0 then
+        return
+    end
+    
+    -- 标记敌人已死亡
+    enemy.health = 0
+    
+    -- 增加分数
+    gameScore_ = gameScore_ + ENEMY_CONFIG.ScorePerKill
+    totalKills_ = totalKills_ + 1
+    
+    -- 创建爆炸效果
+    local explosionPos = enemy.node.position
+    CreateExplosion(explosionPos)
+    
+    -- 移除敌人
+    if enemy.node then
+        enemy.node:Remove()
+    end
+    
+    -- 从敌人列表中移除
+    for i, e in ipairs(enemies_) do
+        if e == enemy then
+            table.remove(enemies_, i)
+            break
+        end
+    end
+    
+    -- 移除导弹
+    if missile.node then
+        missile.node:Remove()
+    end
+    
+    -- 在赛道随机位置生成新敌人
+    SpawnEnemyAtRandomPosition()
+    
+    print("击杀敌人！得分: " .. gameScore_)
+end
+
+--- 创建爆炸效果
+---@param position Vector3 爆炸位置
+function CreateExplosion(position)
+    -- 创建多个爆炸球体
+    for j = 1, 8 do
+        local explosionNode = scene_:CreateChild("Explosion")
+        
+        -- 随机偏移
+        local offset = Vector3(
+            (math.random() - 0.5) * 2,
+            math.random() * 1.5,
+            (math.random() - 0.5) * 2
+        )
+        explosionNode.position = position + offset
+        
+        local model = explosionNode:CreateComponent("StaticModel")
+        model:SetModel(cache:GetResource("Model", "Models/Sphere.mdl"))
+        
+        -- 爆炸材质（橙黄色）
+        local explosionMat = Material:new()
+        local tech = cache:GetResource("Technique", "Techniques/NoTextureUnlitAlpha.xml")
+        if tech then
+            explosionMat:SetTechnique(0, tech)
+        end
+        local r = 1.0
+        local g = 0.5 + math.random() * 0.5
+        local b = 0.1
+        explosionMat:SetShaderParameter("MatDiffColor", Variant(Color(r, g, b, 0.8)))
+        model:SetMaterial(explosionMat)
+        
+        local baseSize = 0.5 + math.random() * 0.5
+        explosionNode.scale = Vector3(baseSize, baseSize, baseSize)
+        
+        table.insert(explosionBalls_, {
+            node = explosionNode,
+            material = explosionMat,
+            timer = 0.5 + math.random() * 0.3,
+            maxTime = 0.5,
+            initialScale = baseSize,
+            velocityY = 2 + math.random() * 2,
+        })
+    end
+end
+
+--- 更新爆炸效果
+---@param dt number 时间步长
+function UpdateExplosions(dt)
+    local toRemove = {}
+    
+    for i, ball in ipairs(explosionBalls_) do
+        ball.timer = ball.timer - dt
+        
+        if ball.timer <= 0 then
+            table.insert(toRemove, i)
+        else
+            local lifeRatio = ball.timer / ball.maxTime
+            
+            -- 扩大并淡出
+            local scale = ball.initialScale * (1 + (1 - lifeRatio) * 2)
+            ball.node.scale = Vector3(scale, scale, scale)
+            
+            local alpha = lifeRatio * 0.8
+            ball.material:SetShaderParameter("MatDiffColor", 
+                Variant(Color(1.0, 0.6 * lifeRatio, 0.1, alpha)))
+            
+            -- 向上飘动
+            local pos = ball.node.position
+            pos.y = pos.y + ball.velocityY * dt
+            ball.node.position = pos
+        end
+    end
+    
+    for i = #toRemove, 1, -1 do
+        local idx = toRemove[i]
+        explosionBalls_[idx].node:Remove()
+        table.remove(explosionBalls_, idx)
+    end
+end
+
+--- 更新敌人（旋转动画等）
+---@param dt number 时间步长
+function UpdateEnemies(dt)
+    for _, enemy in ipairs(enemies_) do
+        if enemy.node then
+            -- 敌人旋转动画
+            local rot = enemy.node.rotation
+            enemy.node.rotation = rot * Quaternion(enemy.rotationSpeed * dt, Vector3.UP)
+            
+            -- 上下浮动
+            local pos = enemy.node.position
+            pos.y = enemy.position.y + math.sin(time.elapsedTime * 2) * 0.3
+            enemy.node.position = pos
+        end
+    end
+end
+
+--- 清除所有导弹和敌人
+function ClearMissilesAndEnemies()
+    -- 清除导弹
+    for _, missile in ipairs(missiles_) do
+        if missile.node then
+            missile.node:Remove()
+        end
+    end
+    missiles_ = {}
+    
+    -- 清除敌人
+    for _, enemy in ipairs(enemies_) do
+        if enemy.node then
+            enemy.node:Remove()
+        end
+    end
+    enemies_ = {}
+    
+    -- 清除爆炸效果
+    for _, ball in ipairs(explosionBalls_) do
+        if ball.node then
+            ball.node:Remove()
+        end
+    end
+    explosionBalls_ = {}
 end
 
 -- ============================================================================
@@ -1765,7 +2691,7 @@ function HandleUpdate(eventType, eventData)
         for i = 0, 3 do  -- 索引 2, 3 是后轮
             local wheelPos = vehicle_:GetWheelPosition(i)
             -- 将位置放到地面附近
-            local groundPos = Vector3(wheelPos.x, wheelPos.y - 0.2, wheelPos.z)
+            local groundPos = Vector3(wheelPos.x, wheelPos.y - 0.4, wheelPos.z)
             
             -- 生成烟雾球体
             SpawnSmoke(groundPos, intensity)
@@ -1774,6 +2700,32 @@ function HandleUpdate(eventType, eventData)
     
     -- 更新烟雾球（淡出和移除）
     UpdateSmokeBalls(dt)
+    
+    -- ========================================
+    -- 导弹与敌人系统更新（仅在启用时）
+    -- ========================================
+    if CONFIG.EnableCombatSystem then
+        -- 自动发射导弹：检测到前方敌人时自动发射
+        local nearestEnemy = FindNearestEnemy()
+        if nearestEnemy then
+            -- 有敌人在范围内，自动发射（受冷却限制）
+            FireMissile()
+        end
+        
+        -- 手动发射导弹（按 F 键或发射按钮）- 即使没有目标也可以发射
+        if input:GetKeyPress(KEY_F) or (fireButtonPressed_ and input:GetMouseButtonPress(MOUSEB_LEFT)) then
+            FireMissile()
+        end
+        
+        -- 更新导弹
+        UpdateMissiles(dt)
+        
+        -- 更新敌人
+        UpdateEnemies(dt)
+        
+        -- 更新爆炸效果
+        UpdateExplosions(dt)
+    end
 end
 
 ---@param eventType string
@@ -1862,6 +2814,9 @@ function ResetVehicle()
     checkpointsPassed_ = 0
     raceStarted_ = false
     
+    -- 清除导弹和敌人（可选，如果想保留分数就注释掉）
+    ClearMissilesAndEnemies()
+    
     vehicle_:ResetSuspension()
 end
 
@@ -1887,6 +2842,10 @@ function HandleRender(eventType, eventData)
     DrawCarSelectButtons(width, height) -- 车辆配置选择按钮
     DrawTrackSelectButtons(width, height) -- 赛道选择按钮
     DrawDriftButton(width, height)  -- 漂移按钮（右下角）
+    if CONFIG.EnableCombatSystem then
+        DrawFireButton(width, height)   -- 发射按钮（漂移按钮左侧）
+        DrawScorePanel(width, height)   -- 分数面板（右上角）
+    end
     DrawResetButton(width, height)  -- 重置按钮（右上角）
     
     if configPanelOpen_ then
@@ -1909,8 +2868,8 @@ function DrawHUD(width, height)
     nvgFontSize(nvg_, 16)
     nvgTextAlign(nvg_, NVG_ALIGN_LEFT + NVG_ALIGN_TOP)
     nvgFillColor(nvg_, nvgRGBA(200, 200, 200, 200))
-    nvgText(nvg_, 20, 20, "方向键/WASD: 控制 | 空格: 刹车 | Shift: 漂移", nil)
-    nvgText(nvg_, 20, 40, "R: 重置 | O: 配置 | 1-3: 切换赛道", nil)
+    nvgText(nvg_, 20, 20, "方向键/WASD: 控制 | 空格: 刹车 | Shift: 漂移 | 导弹自动发射", nil)
+    nvgText(nvg_, 20, 40, "R: 重置 | O: 配置 | 1-6: 切换赛道", nil)
     
     -- 当前赛道名称
     local trackConfig = GetCurrentTrackConfig()
@@ -1997,6 +2956,17 @@ function DrawSpeedometer(width, height)
     nvgFontSize(nvg_, 14)
     nvgFillColor(nvg_, nvgRGBA(180, 180, 180, 255))
     nvgText(nvg_, centerX, centerY + 20, "km/h", nil)
+    
+    -- 车辆坐标显示
+    if vehicleNode_ then
+        local pos = vehicleNode_.position
+        nvgFontSize(nvg_, 12)
+        nvgFillColor(nvg_, nvgRGBA(150, 200, 255, 200))
+        local posText = string.format("X: %.2f  Z: %.2f", pos.x, pos.z)
+        nvgText(nvg_, centerX, centerY + -100, posText, nil)
+        local heightText = string.format("Y: %.2f", pos.y)
+        nvgText(nvg_, centerX, centerY + 60, heightText, nil)
+    end
 end
 
 function DrawMinimap(width, height)
@@ -2175,7 +3145,7 @@ local RESET_BUTTON = {
     width = 100,
     height = 40,
     rightMargin = 20,
-    topMargin = 200,
+    topMargin = 230,  -- 下移避免与赛道选择按钮重叠
 }
 
 --- 绘制漂移按钮（右下角）
@@ -2275,6 +3245,136 @@ function DrawResetButton(width, height)
     nvgText(nvg_, btnX + btn.width / 2, btnY + btn.height / 2, "🔄 重置状态", nil)
 end
 
+-- 发射按钮位置和大小（漂移按钮左侧）
+local FIRE_BUTTON = {
+    width = 150,
+    height = 150,
+    rightMargin = 250,  -- 在漂移按钮左侧
+    bottomMargin = 30,
+}
+
+--- 绘制发射按钮
+function DrawFireButton(width, height)
+    local btn = FIRE_BUTTON
+    local btnX = width - btn.rightMargin - btn.width
+    local btnY = height - btn.bottomMargin - btn.height
+    
+    local mouseX = input.mousePosition.x
+    local mouseY = input.mousePosition.y
+    
+    -- 检测悬停
+    local isHover = mouseX >= btnX and mouseX <= btnX + btn.width and
+                    mouseY >= btnY and mouseY <= btnY + btn.height
+    
+    -- 检测是否按下
+    local isPressed = isHover and input:GetMouseButtonDown(MOUSEB_LEFT)
+    fireButtonPressed_ = isHover  -- 只要在按钮区域内就标记
+    
+    -- 计算冷却进度
+    local currentTime = time.elapsedTime
+    local cooldownRemain = math.max(0, MISSILE_CONFIG.FireCooldown - (currentTime - lastFireTime_))
+    local cooldownRatio = cooldownRemain / MISSILE_CONFIG.FireCooldown
+    local canFire = cooldownRemain <= 0
+    
+    -- 按钮背景
+    nvgBeginPath(nvg_)
+    nvgRoundedRect(nvg_, btnX, btnY, btn.width, btn.height, 12)
+    
+    if isPressed and canFire then
+        -- 按下且可发射：亮红色
+        nvgFillColor(nvg_, nvgRGBA(255, 80, 80, 250))
+    elseif isHover then
+        -- 悬停状态：浅红色
+        nvgFillColor(nvg_, nvgRGBA(200, 60, 60, 230))
+    else
+        -- 正常状态：深红色
+        nvgFillColor(nvg_, nvgRGBA(150, 40, 40, 200))
+    end
+    nvgFill(nvg_)
+    
+    -- 冷却遮罩
+    if cooldownRatio > 0 then
+        nvgBeginPath(nvg_)
+        nvgRoundedRect(nvg_, btnX, btnY, btn.width, btn.height * cooldownRatio, 12)
+        nvgFillColor(nvg_, nvgRGBA(0, 0, 0, 150))
+        nvgFill(nvg_)
+    end
+    
+    -- 按钮边框
+    if canFire then
+        nvgStrokeColor(nvg_, nvgRGBA(255, 100, 100, 255))
+    else
+        nvgStrokeColor(nvg_, nvgRGBA(150, 80, 80, 255))
+    end
+    nvgStrokeWidth(nvg_, 3)
+    nvgStroke(nvg_)
+    
+    -- 按钮图标和文字
+    nvgFontFace(nvg_, "sans")
+    nvgFontSize(nvg_, 32)
+    nvgTextAlign(nvg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(nvg_, nvgRGBA(255, 255, 255, canFire and 255 or 150))
+    nvgText(nvg_, btnX + btn.width / 2, btnY + btn.height / 2 - 15, "🚀", nil)
+    
+    nvgFontSize(nvg_, 14)
+    if not canFire then
+        nvgText(nvg_, btnX + btn.width / 2, btnY + btn.height / 2 + 20, "冷却中", nil)
+    else
+        nvgText(nvg_, btnX + btn.width / 2, btnY + btn.height / 2 + 20, "自动发射", nil)
+    end
+    
+    -- 显示搜索到的敌人数量
+    local nearestEnemy = FindNearestEnemy()
+    nvgFontSize(nvg_, 12)
+    if nearestEnemy then
+        nvgFillColor(nvg_, nvgRGBA(100, 255, 100, 255))
+        nvgText(nvg_, btnX + btn.width / 2, btnY + btn.height / 2 + 38, "目标锁定!", nil)
+    else
+        nvgFillColor(nvg_, nvgRGBA(200, 200, 200, 150))
+        nvgText(nvg_, btnX + btn.width / 2, btnY + btn.height / 2 + 38, "搜索中...", nil)
+    end
+end
+
+--- 绘制分数面板（右上角，小地图左侧）
+function DrawScorePanel(width, height)
+    local panelWidth = 160
+    local panelHeight = 90
+    local panelX = width - panelWidth - 160  -- 小地图左侧
+    local panelY = 20
+    
+    -- 面板背景
+    nvgBeginPath(nvg_)
+    nvgRoundedRect(nvg_, panelX, panelY, panelWidth, panelHeight, 8)
+    nvgFillColor(nvg_, nvgRGBA(20, 20, 40, 220))
+    nvgFill(nvg_)
+    nvgStrokeColor(nvg_, nvgRGBA(255, 200, 100, 200))
+    nvgStrokeWidth(nvg_, 2)
+    nvgStroke(nvg_)
+    
+    -- 标题
+    nvgFontFace(nvg_, "sans")
+    nvgFontSize(nvg_, 14)
+    nvgTextAlign(nvg_, NVG_ALIGN_CENTER + NVG_ALIGN_TOP)
+    nvgFillColor(nvg_, nvgRGBA(255, 200, 100, 255))
+    nvgText(nvg_, panelX + panelWidth / 2, panelY + 8, "战斗统计", nil)
+    
+    -- 分数
+    nvgFontSize(nvg_, 24)
+    nvgTextAlign(nvg_, NVG_ALIGN_CENTER + NVG_ALIGN_MIDDLE)
+    nvgFillColor(nvg_, nvgRGBA(255, 255, 100, 255))
+    nvgText(nvg_, panelX + panelWidth / 2, panelY + 40, string.format("%d", gameScore_), nil)
+    
+    -- 击杀数和敌人数
+    nvgFontSize(nvg_, 12)
+    nvgFillColor(nvg_, nvgRGBA(200, 200, 200, 200))
+    nvgText(nvg_, panelX + panelWidth / 2, panelY + 65, 
+        string.format("击杀: %d | 敌人: %d", totalKills_, #enemies_), nil)
+    
+    -- 导弹数量
+    nvgText(nvg_, panelX + panelWidth / 2, panelY + 78, 
+        string.format("导弹: %d", #missiles_), nil)
+end
+
 -- ============================================================================
 -- 8. 配置面板系统
 -- ============================================================================
@@ -2292,7 +3392,7 @@ local CONFIG_PANEL = {
     x = 20,
     y = 180,
     width = 340,
-    height = 660,
+    height = 688,  -- 增加高度以容纳系统开关
     sliderWidth = 180,
     sliderHeight = 16,
 }
@@ -2592,6 +3692,62 @@ function DrawSlider(name, label, x, y, value, minVal, maxVal, format)
     return value
 end
 
+--- 绘制开关控件
+---@param name string 开关名称（用于标识）
+---@param label string 显示标签
+---@param x number X坐标
+---@param y number Y坐标
+---@param value boolean 当前值
+---@return boolean 新值
+function DrawToggle(name, label, x, y, value)
+    local panel = CONFIG_PANEL
+    local toggleX = x + 100
+    local toggleY = y
+    local toggleW = 50
+    local toggleH = 20
+    
+    -- 标签
+    nvgFontFace(nvg_, "sans")
+    nvgFontSize(nvg_, 14)
+    nvgTextAlign(nvg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(nvg_, nvgRGBA(200, 200, 200, 255))
+    nvgText(nvg_, x, y + toggleH / 2, label, nil)
+    
+    -- 开关背景
+    nvgBeginPath(nvg_)
+    nvgRoundedRect(nvg_, toggleX, toggleY, toggleW, toggleH, toggleH / 2)
+    if value then
+        nvgFillColor(nvg_, nvgRGBA(80, 180, 80, 255))  -- 开：绿色
+    else
+        nvgFillColor(nvg_, nvgRGBA(80, 80, 90, 255))   -- 关：灰色
+    end
+    nvgFill(nvg_)
+    
+    -- 开关滑块
+    local knobX = value and (toggleX + toggleW - toggleH + 2) or (toggleX + 2)
+    nvgBeginPath(nvg_)
+    nvgCircle(nvg_, knobX + (toggleH - 4) / 2, toggleY + toggleH / 2, (toggleH - 4) / 2)
+    nvgFillColor(nvg_, nvgRGBA(255, 255, 255, 255))
+    nvgFill(nvg_)
+    
+    -- 状态文字
+    nvgTextAlign(nvg_, NVG_ALIGN_LEFT + NVG_ALIGN_MIDDLE)
+    nvgFillColor(nvg_, value and nvgRGBA(100, 255, 100, 255) or nvgRGBA(200, 200, 200, 200))
+    nvgText(nvg_, toggleX + toggleW + 10, y + toggleH / 2, value and "开启" or "关闭", nil)
+    
+    -- 检测点击
+    local mouseX = input.mousePosition.x
+    local mouseY = input.mousePosition.y
+    
+    if activeToggle_ == name then
+        -- 切换状态
+        activeToggle_ = nil
+        return not value
+    end
+    
+    return value
+end
+
 --- 绘制配置面板
 function DrawConfigPanel(width, height)
     local panel = CONFIG_PANEL
@@ -2624,8 +3780,17 @@ function DrawConfigPanel(width, height)
     local lineHeight = 28
     local labelX = panel.x + 15
     
-    -- ====== 动力参数 ======
+    -- ====== 系统开关 ======
     nvgFontSize(nvg_, 14)
+    nvgFillColor(nvg_, nvgRGBA(150, 200, 255, 255))
+    nvgText(nvg_, labelX, startY - 5, "【系统开关】", nil)
+    startY = startY + 18
+    
+    -- 战斗系统开关
+    CONFIG.EnableCombatSystem = DrawToggle("combat_system", "战斗系统", labelX, startY, CONFIG.EnableCombatSystem)
+    startY = startY + lineHeight + 10
+    
+    -- ====== 动力参数 ======
     nvgFillColor(nvg_, nvgRGBA(150, 200, 255, 255))
     nvgText(nvg_, labelX, startY - 5, "【动力参数】", nil)
     startY = startY + 18
@@ -2711,15 +3876,6 @@ function DrawConfigPanel(width, height)
     end
     startY = startY + lineHeight
     
-    -- 悬挂静止长度（最大压缩行程）- 需要按R重置车辆后生效
-    local newRestLength = DrawSlider("suspension_rest_length", "行程(按R)", labelX, startY,
-        CONFIG.SuspensionRestLength, 0.1, 1.0, "%.2f m")
-    if newRestLength ~= CONFIG.SuspensionRestLength then
-        CONFIG.SuspensionRestLength = newRestLength
-        -- 注意：悬挂静止长度需要重建车辆才能生效
-    end
-    startY = startY + lineHeight
-    
     -- 侧倾影响
     local newRoll = DrawSlider("roll_influence", "侧倾影响", labelX, startY,
         CONFIG.RollInfluence, 0,0.2, "%.2f")
@@ -2802,12 +3958,16 @@ function GetSliderAtPosition(mouseX, mouseY)
     if not configPanelOpen_ then return nil end
     
     local panel = CONFIG_PANEL
-    local sliderX = panel.x + 15 + 100
-    local sliderW = panel.sliderWidth
-    local sliderH = panel.sliderHeight
+    -- 从标签开始检测，而不只是滑块条
+    local sliderX = panel.x + 15
+    local sliderW = 100 + panel.sliderWidth  -- 标签宽度 + 滑块宽度
+    -- 使用整行高度作为检测区域，而不只是滑块条高度
+    local sliderH = 28  -- lineHeight，匹配实际布局
     
     -- 计算各滑块的Y坐标（需要与 DrawConfigPanel 中的布局一致）
-    local baseY = panel.y + 55 + 18
+    -- 开关区域占用：标题(18) + 开关(28) + 间距(10) = 56
+    local toggleOffset = 56
+    local baseY = panel.y + 55 + 18 + toggleOffset
     local lineHeight = 28
     
     local sliders = {
@@ -2822,14 +3982,13 @@ function GetSliderAtPosition(mouseX, mouseY)
         {name = "suspension_stiffness", y = baseY + lineHeight * 8 + 56},
         {name = "suspension_damping", y = baseY + lineHeight * 9 + 56},
         {name = "suspension_compression", y = baseY + lineHeight * 10 + 56},
-        {name = "suspension_rest_length", y = baseY + lineHeight * 11 + 56},
-        {name = "roll_influence", y = baseY + lineHeight * 12 + 56},
-        {name = "drift_min_speed", y = baseY + lineHeight * 13 + 84},
-        {name = "drift_steering", y = baseY + lineHeight * 14 + 84},
-        {name = "drift_friction", y = baseY + lineHeight * 15 + 84},
-        {name = "drift_recovery", y = baseY + lineHeight * 16 + 84},
-        {name = "drift_compensation", y = baseY + lineHeight * 17 + 84},
-        {name = "coast_turn_retain", y = baseY + lineHeight * 18 + 84},
+        {name = "roll_influence", y = baseY + lineHeight * 11 + 56},
+        {name = "drift_min_speed", y = baseY + lineHeight * 12 + 84},
+        {name = "drift_steering", y = baseY + lineHeight * 13 + 84},
+        {name = "drift_friction", y = baseY + lineHeight * 14 + 84},
+        {name = "drift_recovery", y = baseY + lineHeight * 15 + 84},
+        {name = "drift_compensation", y = baseY + lineHeight * 16 + 84},
+        {name = "coast_turn_retain", y = baseY + lineHeight * 17 + 84},
     }
     
     for _, slider in ipairs(sliders) do
@@ -2842,12 +4001,56 @@ function GetSliderAtPosition(mouseX, mouseY)
     return nil
 end
 
+--- 检测点击是否在开关上
+---@param mouseX number
+---@param mouseY number
+---@return string|nil 开关名称或nil
+function GetToggleAtPosition(mouseX, mouseY)
+    if not configPanelOpen_ then return nil end
+    
+    local panel = CONFIG_PANEL
+    -- 从标签开始检测
+    local toggleX = panel.x + 15
+    local toggleW = 100 + 50  -- 标签宽度 + 开关宽度
+    -- 使用整行高度作为检测区域
+    local toggleH = 28  -- lineHeight，匹配实际布局
+    
+    -- 计算开关的 Y 坐标（需要与 DrawConfigPanel 中的布局一致）
+    local baseY = panel.y + 55 + 18  -- 跳过标题
+    local lineHeight = 28
+    
+    local toggles = {
+        {name = "combat_system", y = baseY},
+    }
+    
+    for _, toggle in ipairs(toggles) do
+        if mouseX >= toggleX and mouseX <= toggleX + toggleW and
+           mouseY >= toggle.y and mouseY <= toggle.y + toggleH then
+            return toggle.name
+        end
+    end
+    
+    return nil
+end
+
 --- 处理鼠标点击（在 Update 中调用）
 function HandleMouseClick()
     local mouseX = input.mousePosition.x
     local mouseY = input.mousePosition.y
     local screenWidth = graphics.width
     local screenHeight = graphics.height
+    
+    -- 检测发射按钮点击（仅在启用战斗系统时）
+    if CONFIG.EnableCombatSystem then
+        local fireBtn = FIRE_BUTTON
+        local fireX = screenWidth - fireBtn.rightMargin - fireBtn.width
+        local fireY = screenHeight - fireBtn.bottomMargin - fireBtn.height
+        if mouseX >= fireX and mouseX <= fireX + fireBtn.width and
+           mouseY >= fireY and mouseY <= fireY + fireBtn.height then
+            FireMissile()
+            return
+        end
+    end
     
     -- 检测重置按钮点击（右上角）
     local resetBtn = RESET_BUTTON
@@ -2905,8 +4108,16 @@ function HandleMouseClick()
         end
     end
     
-    -- 检测滑块点击
+    -- 检测开关和滑块点击
     if configPanelOpen_ then
+        -- 检测开关点击
+        local toggleName = GetToggleAtPosition(mouseX, mouseY)
+        if toggleName then
+            activeToggle_ = toggleName
+            return
+        end
+        
+        -- 检测滑块点击
         local sliderName = GetSliderAtPosition(mouseX, mouseY)
         if sliderName then
             activeSlider_ = sliderName
