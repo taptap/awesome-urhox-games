@@ -1,0 +1,23 @@
+{
+	"name": "towerdefence",
+	"name_zh": "多边形塔防",
+	"version": "1.0.0",
+	"author": {
+	  "name": "ffly2",
+	  "github": "ffly2",
+	  "email": "ffwzpcctv@gmail.com"
+	},
+	"description": "towerdefence",
+	"description_zh": "多边形塔防",
+	"category": "strategy",
+	"tags": ["2d", "polygon", "towerdefence", "urhox"],
+	"engine": {
+	  "name": "UrhoX",
+	  "minVersion": "1.0.0"
+	},
+	"entry": "scripts/main.lua",
+	"orientation": "landscape",
+	"license": "MIT",
+	"created": "2025-12-01",
+	"updated": "2025-12-11"
+  }
