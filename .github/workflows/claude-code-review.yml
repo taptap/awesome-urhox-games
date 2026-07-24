@@ -24,6 +24,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate configured AI gateway credential
+        if: ${{ vars.ANTHROPIC_BASE_URL != '' }}
+        env:
+          NOVA_ANTHROPIC_API_KEY: ${{ secrets.NOVA_ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NOVA_ANTHROPIC_API_KEY" ]; then
+            echo "::error::NOVA_ANTHROPIC_API_KEY must be configured when ANTHROPIC_BASE_URL is set."
+            exit 1
+          fi
+
       - name: Checkout PR branch
         run: |
           gh pr checkout ${{ github.event.issue.number }}
@@ -64,7 +75,9 @@ jobs:
       - name: Run Claude Code Review
         id: claude_review
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL || 'https://api.anthropic.com' }}
+          ANTHROPIC_API_KEY: ${{ vars.ANTHROPIC_BASE_URL && secrets.NOVA_ANTHROPIC_API_KEY || secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_BASE_URL && 'claude-sonnet-4-6' || 'claude-sonnet-4-20250514' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -79,4 +92,3 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

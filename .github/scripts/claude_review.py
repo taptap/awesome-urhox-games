@@ -94,6 +94,9 @@ def run_claude_review():
         with open("/tmp/review_result.md", 'w') as f:
             f.write(error_msg)
         return
+
+    base_url = os.environ.get("ANTHROPIC_BASE_URL", "https://api.anthropic.com")
+    model = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
     
     pr_number = os.environ.get("PR_NUMBER", "unknown")
     comment_body = os.environ.get("COMMENT_BODY", "")
@@ -155,10 +158,10 @@ def run_claude_review():
 """
 
     try:
-        client = anthropic.Anthropic(api_key=api_key)
+        client = anthropic.Anthropic(api_key=api_key, base_url=base_url)
         
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=model,
             max_tokens=4096,
             system=system_prompt,
             messages=[
@@ -206,4 +209,3 @@ def run_claude_review():
 
 if __name__ == "__main__":
     run_claude_review()
-
