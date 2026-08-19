@@ -1,0 +1,29 @@
+{
+	"name": "climb-and-jump-tower",
+	"name_zh": "爬塔游戏",
+	"version": "1.0.0",
+	"author": {
+		"name": "hzk",
+		"github": "hzk",
+		"email": "hsrhzk@gmail.com"
+	},
+	"description": "climb-and-jump-tower",
+	"description_zh": "爬塔游戏",
+	"category": "casual",
+	"tags": [
+		"3d",
+		"jump",
+		"climb",
+		"tower",
+		"urhox"
+	],
+	"engine": {
+		"name": "UrhoX",
+		"minVersion": "1.0.0"
+	},
+	"entry": "scripts/main.lua",
+	"orientation": "portrait",
+	"license": "MIT",
+	"created": "2025-12-05",
+	"updated": "2025-12-15"
+}
