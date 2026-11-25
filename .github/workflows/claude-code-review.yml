@@ -11,10 +11,13 @@ permissions:
 
 jobs:
   claude-review:
-    # 只在 PR 评论中触发，且评论包含 @claude
+    # 只在 PR 评论中触发，且评论包含 @claude。
+    # 仅限有写权限的成员：否则任何人（含 fork PR 的提交者）都能通过评论
+    # 触发携带 ANTHROPIC_API_KEY 的工作流并检出其代码。
     if: |
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '@claude')
+      contains(github.event.comment.body, '@claude') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
     
     runs-on: ubuntu-latest
     
@@ -69,7 +72,11 @@ jobs:
           PR_NUMBER: ${{ github.event.issue.number }}
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          python .github/scripts/claude_review.py
+          # 始终从默认分支取脚本运行，绝不能执行 PR 检出里的脚本：
+          # 该步骤持有 ANTHROPIC_API_KEY。
+          gh api "repos/${{ github.repository }}/contents/.github/scripts/claude_review.py?ref=${{ github.event.repository.default_branch }}" \
+            -H "Accept: application/vnd.github.raw" > /tmp/claude_review.py
+          python /tmp/claude_review.py
 
       - name: Post review comment
         if: always()
